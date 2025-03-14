@@ -78,15 +78,12 @@ img { max-width: 100px; max-height: 100px; } /* Limit image size */
         updateLocalStorage();
         renderTable();
 
-        // Send the image data to MIT App Inventor WebViewer
-        sendDataToAppInventor(imageUrl);
-
         // Clear input fields
         document.getElementById('newCol1').value = '';
         document.getElementById('newCol2').value = '';
         document.getElementById('imagePicker').value = ''; 
     };
-    reader.readAsDataURL(file); // Read image as Base64 URL
+    reader.readAsDataURL(file); // Read image as Data URL
   }
 
   function renderTable() {
@@ -107,7 +104,6 @@ img { max-width: 100px; max-height: 100px; } /* Limit image size */
             const img = document.createElement('img');
             img.src = cell;
             img.alt = 'Uploaded Image';
-            img.onclick = () => sendDataToAppInventor(cell); // Send image when clicked
             cellElement.appendChild(img);
           }
           const chooseImageButton = document.createElement('button');
@@ -147,14 +143,8 @@ img { max-width: 100px; max-height: 100px; } /* Limit image size */
     document.getElementById('imagePicker').click();
   }
 
-  function sendDataToAppInventor(data) {
-    if (window.AppInventor) {
-        window.AppInventor.setWebViewString(data);
-    }
-  }
-
   renderTable();
 </script>
 
 </body>
-	</html>
+</html>
