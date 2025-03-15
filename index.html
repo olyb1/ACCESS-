@@ -29,17 +29,19 @@ img { max-width: 100px; max-height: 100px; } /* Limit image size */
   <tbody id="tableBody"></tbody>
 </table>
 
-<input type="text" id="newCol1" placeholder="Assessment Name">
-<input type="text" id="newCol2" placeholder="Score">
+<input type="text" id="newCol1" placeholder="Column 1">
+<input type="text" id="newCol2" placeholder="Column 2">
 <input type="file" id="imagePicker" accept="image/*">
 <button onclick="showImagePicker()">Choose Image</button>
 <button onclick="addRow()">Add Row</button>
 
 <script>
-  let data = JSON.parse(localStorage.getItem('tableData')) || [];
+  const pageID = window.location.pathname; // Unique key per GitHub Page
+  const storageKey = `tableData_${pageID}`;
+  let data = JSON.parse(localStorage.getItem(storageKey)) || [];
 
   function updateLocalStorage() {
-    localStorage.setItem('tableData', JSON.stringify(data));
+    localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
   function updateData(rowIndex, colIndex, value) {
@@ -56,34 +58,38 @@ img { max-width: 100px; max-height: 100px; } /* Limit image size */
 
   function addRow() {
     const file = document.getElementById('imagePicker').files[0];
-    const newCol1 = document.getElementById('newCol1').value.trim();
-    const newCol2 = document.getElementById('newCol2').value.trim();
+    let imageUrl = '';
 
-    if (!file) {
-        alert("You must choose an image before adding a row.");
-        return;
-    }
-
-    if (newCol1 === '' || newCol2 === '') {
-        alert("Assessment Name and Score cannot be empty.");
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const imageUrl = e.target.result; // Get Data URL after loading
-        const newRow = [newCol1, newCol2, imageUrl];
-
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imageUrl = e.target.result;
+        const newRow = [
+          document.getElementById('newCol1').value,
+          document.getElementById('newCol2').value,
+          imageUrl,
+        ];
         data.push(newRow);
-        updateLocalStorage();
-        renderTable();
-
-        // Clear input fields
         document.getElementById('newCol1').value = '';
         document.getElementById('newCol2').value = '';
-        document.getElementById('imagePicker').value = ''; 
-    };
-    reader.readAsDataURL(file); // Read image as Data URL
+        document.getElementById('imagePicker').value = ''; // Clear file input
+        updateLocalStorage();
+        renderTable();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const newRow = [
+        document.getElementById('newCol1').value,
+        document.getElementById('newCol2').value,
+        imageUrl,
+      ];
+      data.push(newRow);
+      document.getElementById('newCol1').value = '';
+      document.getElementById('newCol2').value = '';
+      document.getElementById('imagePicker').value = ''; // Clear file input
+      updateLocalStorage();
+      renderTable();
+    }
   }
 
   function renderTable() {
@@ -100,12 +106,10 @@ img { max-width: 100px; max-height: 100px; } /* Limit image size */
       row.forEach((cell, colIndex) => {
         const cellElement = newRow.insertCell();
         if (colIndex === 2) { // Image column
-          if (cell) {
-            const img = document.createElement('img');
-            img.src = cell;
-            img.alt = 'Uploaded Image';
-            cellElement.appendChild(img);
-          }
+          const img = document.createElement('img');
+          img.src = cell;
+          img.alt = 'Uploaded Image';
+          cellElement.appendChild(img);
           const chooseImageButton = document.createElement('button');
           chooseImageButton.textContent = 'Choose Image';
           chooseImageButton.onclick = () => {
