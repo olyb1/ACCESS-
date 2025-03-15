@@ -9,8 +9,7 @@ th, td { border: 1px solid black; padding: 12px; }
 th { text-align: left; }
 input[type="text"] { font-size: 16px; padding: 8px; width: 100%; box-sizing: border-box; }
 button { font-size: 16px; padding: 8px 12px; }
-input[type="file"] { display: none; }
-img { max-width: 100px; max-height: 100px; }
+img { max-width: 100px; max-height: 100px; display: block; margin-top: 5px; } /* Limit image size */
 </style>
 </head>
 <body>
@@ -31,16 +30,14 @@ img { max-width: 100px; max-height: 100px; }
 
 <input type="text" id="newCol1" placeholder="Column 1">
 <input type="text" id="newCol2" placeholder="Column 2">
-<input type="file" id="imagePicker" accept="image/*">
-<button onclick="showImagePicker()">Choose Image</button>
+<input type="file" id="imagePicker" accept="image/*" style="display: none;">
 <button onclick="addRow()">Add Row</button>
 
 <script>
-  const storageKey = `tableData_${window.location.pathname}`;
-  let data = JSON.parse(localStorage.getItem(storageKey)) || [];
+  let data = JSON.parse(localStorage.getItem('tableData')) || [];
 
   function updateLocalStorage() {
-    localStorage.setItem(storageKey, JSON.stringify(data));
+    localStorage.setItem('tableData', JSON.stringify(data));
   }
 
   function updateData(rowIndex, colIndex, value) {
@@ -56,32 +53,16 @@ img { max-width: 100px; max-height: 100px; }
   }
 
   function addRow() {
-    const fileInput = document.getElementById('imagePicker');
-    const file = fileInput.files[0];
     const newRow = [
       document.getElementById('newCol1').value,
       document.getElementById('newCol2').value,
-      ''
+      '' // Empty image initially
     ];
-
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newRow[2] = e.target.result;
-        data.push(newRow);
-        updateLocalStorage();
-        renderTable();
-      };
-      reader.readAsDataURL(file);
-    } else {
-      data.push(newRow);
-      updateLocalStorage();
-      renderTable();
-    }
-
+    data.push(newRow);
     document.getElementById('newCol1').value = '';
     document.getElementById('newCol2').value = '';
-    fileInput.value = ''; // Clear file input
+    updateLocalStorage();
+    renderTable();
   }
 
   function renderTable() {
@@ -89,37 +70,37 @@ img { max-width: 100px; max-height: 100px; }
     tbody.innerHTML = '';
 
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const filteredData = data.filter(row => 
-      row.some(cell => typeof cell === 'string' && cell.toLowerCase().includes(searchTerm))
-    );
+    const filteredData = data.filter(row => {
+      return row.some(cell => cell && cell.toString().toLowerCase().includes(searchTerm));
+    });
 
     filteredData.forEach((row, rowIndex) => {
       const newRow = tbody.insertRow();
-      
       row.forEach((cell, colIndex) => {
         const cellElement = newRow.insertCell();
-        
         if (colIndex === 2) { // Image column
-          if (cell) {
-            const img = document.createElement('img');
-            img.src = cell;
-            img.alt = 'Uploaded Image';
-            cellElement.appendChild(img);
-          }
+          const img = document.createElement('img');
+          img.src = cell || 'https://via.placeholder.com/100'; // Default placeholder
+          img.alt = 'Uploaded Image';
+          cellElement.appendChild(img);
 
           const chooseImageButton = document.createElement('button');
           chooseImageButton.textContent = 'Choose Image';
           chooseImageButton.onclick = () => {
-            document.getElementById('imagePicker').click();
-            document.getElementById('imagePicker').onchange = () => {
-              const file = document.getElementById('imagePicker').files[0];
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+            fileInput.click();
+
+            fileInput.onchange = () => {
+              const file = fileInput.files[0];
               if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                  updateData(rowIndex, colIndex, e.target.result);
-                };
-                reader.readAsDataURL(file);
+                const imageUrl = URL.createObjectURL(file); // Fix for camera images
+                updateData(rowIndex, colIndex, imageUrl);
               }
+              document.body.removeChild(fileInput);
             };
           };
           cellElement.appendChild(chooseImageButton);
@@ -142,10 +123,6 @@ img { max-width: 100px; max-height: 100px; }
 
   function searchTable() {
     renderTable();
-  }
-
-  function showImagePicker() {
-    document.getElementById('imagePicker').click();
   }
 
   renderTable();
